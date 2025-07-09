@@ -42,13 +42,23 @@
       .then(raw => {
         const items = Array.isArray(raw) ? raw : [raw];
 
-        // Normalize RSSI values and filter out invalid lat/lng
+        // Normalize RSSI values and filter out invalid lat/lng. Points with
+        // null/NaN RSSI are treated as zero intensity so that they render as
+        // the lowest value (blue) on the heatmap.
         const points = items
-          .filter(i => i.latitude !== undefined && i.longitude !== undefined && i.scan_result && i.scan_result.rssi_dbm !== undefined)
+          .filter(i =>
+            i.latitude !== undefined &&
+            i.longitude !== undefined &&
+            i.scan_result &&
+            i.scan_result.rssi_dbm !== undefined &&
+            i.scan_result.rssi_dbm !== null
+          )
           .map(i => {
-            const rssi = i.scan_result.rssi_dbm;
+            const rssi = parseFloat(i.scan_result.rssi_dbm);
             // Normalize RSSI: Convert negative RSSI to a 0-1 scale (e.g., -100 to 0 becomes 0 to 1)
-            const normalizedRssi = Math.min(1, Math.max(0, (rssi + 100) / 100));
+            const normalizedRssi = isNaN(rssi)
+              ? 0
+              : Math.min(1, Math.max(0, (rssi + 100) / 100));
             return {
               lat: parseFloat(i.latitude),
               lng: parseFloat(i.longitude),
