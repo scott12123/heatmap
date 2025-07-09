@@ -7,6 +7,25 @@
   <link rel="stylesheet" href="/leaflet/leaflet.css" />
   <style>
     html, body, #map { height: 100%; margin: 0; }
+
+    .leaflet-control-layers-expanded {
+      display: block !important; /* Ensure the control is always expanded */
+      background: white; /* Set a visible background color */
+      padding: 5px; /* Add some padding for better appearance */
+      border-radius: 5px; /* Optional: Add rounded corners */
+      box-shadow: 0 1px 5px rgba(0, 0, 0, 0.65); /* Optional: Add a shadow for better visibility */
+    }
+
+    .leaflet-control-layers-expanded input[type="radio"] {
+      display: inline-block; /* Ensure radio buttons are visible */
+      margin-right: 5px; /* Add spacing between the radio button and text */
+    }
+
+    .leaflet-control-layers-expanded label {
+      display: inline-block; /* Ensure labels are visible */
+      margin-bottom: 5px; /* Add spacing between options */
+      cursor: pointer; /* Make the labels clickable */
+    }
   </style>
 </head>
 <body>
