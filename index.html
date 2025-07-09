@@ -54,19 +54,15 @@
           }
         }).addTo(map);
 
-        // Add a popup to display the average signal strength
-        const popup = L.popup()
-          .setLatLng([avgLat, avgLng])
-          .setContent(`Average Signal Strength: ${avgSignalStrength}%`);
+        // Create a popup for displaying the average signal strength
+        const popup = L.popup();
 
-        // Show the popup on mouse hover
-        map.on('mouseover', () => {
-          popup.openOn(map);
-        });
-
-        // Hide the popup when the mouse leaves the map
-        map.on('mouseout', () => {
-          map.closePopup(popup);
+        // Update the popup dynamically on mousemove
+        map.on('mousemove', (e) => {
+          popup
+            .setLatLng(e.latlng) // Set the popup position to the mouse location
+            .setContent(`Average Signal Strength: ${avgSignalStrength}%`) // Update the content
+            .openOn(map); // Open the popup on the map
         });
       } else {
         console.error('No valid points to display on the map.');
