@@ -70,7 +70,7 @@
           });
 
         const map = L.map('map', {
-          center: [0, 0], // Set the initial center of the map
+          //center: [0, 0], // Set the initial center of the map
           zoom: 10, // Set the fixed zoom level
           zoomControl: false, // Disable the zoom control buttons
           scrollWheelZoom: false, // Disable zooming with the mouse wheel
@@ -101,10 +101,10 @@
           const heatLayer = L.heatLayer(
             points.map(point => [point.lat, point.lng, point.intensity]),
             {
-              radius: 35,
+              radius: 10,
               max: 1, // Set the maximum intensity value (normalized to 1)
-              minOpacity: 0, // Ensure points with zero intensity are fully transparent
-              blur: 15, // Adjust the blur to control the spread of intensity
+              // minOpacity: 0, // Ensure points with zero intensity are fully transparent
+              blur: 1, // Adjust the blur to control the spread of intensity
               gradient: {
                 0.0: 'blue',   // 0% intensity (always blue)
                 0.01: 'blue',  // Slightly above 0 is still blue
