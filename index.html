@@ -31,15 +31,24 @@
         ]);
 
       const map = L.map('map').setView([0, 0], 2);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+
+      // Define the default map layer
+      const defaultLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors'
-      }).addTo(map);
+      });
 
+      // Define the satellite map layer
+      const satelliteLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+        attribution: '© Google Maps',
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+      });
+
+      // Add the default layer to the map
+      defaultLayer.addTo(map);
+
+      // Add the heatmap layer
       if (points.length) {
-        // Create a LatLngBounds object to store the bounds of all points
         const bounds = L.latLngBounds(points.map(point => [point[0], point[1]]));
-
-        // Fit the map's view to the bounds of all points
         map.fitBounds(bounds);
 
         const heatLayer = L.heatLayer(points, {
@@ -50,6 +59,12 @@
             0.6: 'yellow', // 60% intensity
             1.0: 'red'     // 100% intensity
           }
+        }).addTo(map);
+
+        // Add layer control to toggle between default and satellite views
+        L.control.layers({
+          'Default View': defaultLayer,
+          'Satellite View': satelliteLayer
         }).addTo(map);
 
         // Create a popup for displaying the signal strength of the closest point
