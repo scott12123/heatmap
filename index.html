@@ -85,6 +85,8 @@
             {
               radius: 35,
               max: 1, // Set the maximum intensity value (normalized to 1)
+              minOpacity: 0, // Ensure points with zero intensity are fully transparent
+              blur: 15, // Adjust the blur to control the spread of intensity
               gradient: {
                 0.0: 'blue',   // 0% intensity
                 0.3: 'green',  // 30% intensity
