@@ -84,6 +84,7 @@
             points.map(point => [point.lat, point.lng, point.intensity]),
             {
               radius: 35,
+              max: 1, // Set the maximum intensity value (normalized to 1)
               gradient: {
                 0.0: 'blue',   // 0% intensity
                 0.3: 'green',  // 30% intensity
