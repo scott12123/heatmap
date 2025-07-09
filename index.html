@@ -131,7 +131,7 @@
               popup
                 .setLatLng(e.latlng) // Set the popup position to the mouse location
                 .setContent(
-                  `SSID: ${closestPoint.ssid}<br>Signal Strength (RSSI): ${signalStrength}%`
+                  `SSID: ${closestPoint.ssid}<br>Signal Strength (RSSI): ${i.scan_result.rssi_dbm}`
                 ) // Update the content with SSID and signal strength
                 .openOn(map); // Open the popup on the map
             } else {
