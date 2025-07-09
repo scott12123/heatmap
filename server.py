@@ -5,6 +5,7 @@ import pathlib
 import os
 import signal
 import sys
+import time
 
 PORT = 8500
 BASE_DIR = pathlib.Path('/home/pi/heatmap')  # Base directory for the server
@@ -12,7 +13,7 @@ BASE_DIR = pathlib.Path('/home/pi/heatmap')  # Base directory for the server
 class Handler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path == '/data':
-            file_path = pathlib.Path('test_results.json')
+            file_path = pathlib.Path('/test_results.json')
             if file_path.exists():
                 try:
                     with file_path.open() as f:
@@ -50,6 +51,32 @@ def signal_handler(sig, frame):
     print("\nShutting down server gracefully...")
     sys.exit(0)
 
+def start_server():
+    """Start the server with retries if the port is still in use."""
+    retries = 3
+    for attempt in range(retries):
+        try:
+            with socketserver.TCPServer(('', PORT), Handler) as httpd:
+                print(f"Serving on port {PORT}")
+                try:
+                    httpd.serve_forever()
+                except KeyboardInterrupt:
+                    print("\nServer interrupted by user.")
+                finally:
+                    print("Server shutting down...")
+                    httpd.server_close()
+                break
+        except OSError as e:
+            if "Address already in use" in str(e):
+                print(f"Port {PORT} is still in use. Retrying... ({attempt + 1}/{retries})")
+                find_and_kill_existing_process(PORT)
+                time.sleep(1)  # Wait a moment before retrying
+            else:
+                raise
+    else:
+        print(f"Failed to start the server after {retries} attempts. Exiting.")
+        sys.exit(1)
+
 if __name__ == '__main__':
     # Register signal handlers for graceful shutdown
     signal.signal(signal.SIGINT, signal_handler)
@@ -59,12 +86,4 @@ if __name__ == '__main__':
     find_and_kill_existing_process(PORT)
 
     # Start the server
-    with socketserver.TCPServer(('', PORT), Handler) as httpd:
-        print(f"Serving on port {PORT}")
-        try:
-            httpd.serve_forever()
-        except KeyboardInterrupt:
-            print("\nServer interrupted by user.")
-        finally:
-            print("Server shutting down...")
-            httpd.server_close()
+    start_server()
