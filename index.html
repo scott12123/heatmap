@@ -38,9 +38,6 @@
       if (points.length) {
         const avgLat = points.reduce((a, p) => a + p[0], 0) / points.length;
         const avgLng = points.reduce((a, p) => a + p[1], 0) / points.length;
-        const avgSignalStrength = (
-          points.reduce((a, p) => a + (p[2] * 100), 0) / points.length
-        ).toFixed(2); // Calculate average signal strength and format to 2 decimals
 
         map.setView([avgLat, avgLng], 13);
 
@@ -54,15 +51,35 @@
           }
         }).addTo(map);
 
-        // Create a popup for displaying the average signal strength
+        // Create a popup for displaying the signal strength of the closest point
         const popup = L.popup();
+
+        // Function to find the closest point to the mouse location
+        function findClosestPoint(latlng) {
+          let closestPoint = null;
+          let minDistance = Infinity;
+
+          points.forEach(point => {
+            const distance = map.distance(latlng, L.latLng(point[0], point[1]));
+            if (distance < minDistance) {
+              minDistance = distance;
+              closestPoint = point;
+            }
+          });
+
+          return closestPoint;
+        }
 
         // Update the popup dynamically on mousemove
         map.on('mousemove', (e) => {
-          popup
-            .setLatLng(e.latlng) // Set the popup position to the mouse location
-            .setContent(`Average Signal Strength: ${avgSignalStrength}%`) // Update the content
-            .openOn(map); // Open the popup on the map
+          const closestPoint = findClosestPoint(e.latlng);
+          if (closestPoint) {
+            const signalStrength = (closestPoint[2] * 100).toFixed(2); // Convert intensity back to percentage
+            popup
+              .setLatLng(e.latlng) // Set the popup position to the mouse location
+              .setContent(`Signal Strength: ${signalStrength}%`) // Update the content
+              .openOn(map); // Open the popup on the map
+          }
         });
       } else {
         console.error('No valid points to display on the map.');
