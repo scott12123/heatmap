@@ -53,6 +53,7 @@
 
         // Create a popup for displaying the signal strength of the closest point
         const popup = L.popup();
+        const radiusThreshold = 50; // Define the radius threshold (in meters)
 
         // Function to find the closest point to the mouse location
         function findClosestPoint(latlng) {
@@ -67,18 +68,20 @@
             }
           });
 
-          return closestPoint;
+          return { closestPoint, minDistance };
         }
 
         // Update the popup dynamically on mousemove
         map.on('mousemove', (e) => {
-          const closestPoint = findClosestPoint(e.latlng);
-          if (closestPoint) {
+          const { closestPoint, minDistance } = findClosestPoint(e.latlng);
+          if (closestPoint && minDistance <= radiusThreshold) {
             const signalStrength = (closestPoint[2] * 100).toFixed(2); // Convert intensity back to percentage
             popup
               .setLatLng(e.latlng) // Set the popup position to the mouse location
               .setContent(`Signal Strength: ${signalStrength}%`) // Update the content
               .openOn(map); // Open the popup on the map
+          } else {
+            map.closePopup(popup); // Close the popup if no point is within the radius
           }
         });
       } else {
