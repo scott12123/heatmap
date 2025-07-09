@@ -38,8 +38,13 @@
       if (points.length) {
         const avgLat = points.reduce((a, p) => a + p[0], 0) / points.length;
         const avgLng = points.reduce((a, p) => a + p[1], 0) / points.length;
+        const avgSignalStrength = (
+          points.reduce((a, p) => a + (p[2] * 100), 0) / points.length
+        ).toFixed(2); // Calculate average signal strength and format to 2 decimals
+
         map.setView([avgLat, avgLng], 13);
-        L.heatLayer(points, {
+
+        const heatLayer = L.heatLayer(points, {
           radius: 25,
           gradient: {
             0.0: 'blue',   // 0% intensity
@@ -48,6 +53,21 @@
             1.0: 'red'     // 100% intensity
           }
         }).addTo(map);
+
+        // Add a popup to display the average signal strength
+        const popup = L.popup()
+          .setLatLng([avgLat, avgLng])
+          .setContent(`Average Signal Strength: ${avgSignalStrength}%`);
+
+        // Show the popup on mouse hover
+        map.on('mouseover', () => {
+          popup.openOn(map);
+        });
+
+        // Hide the popup when the mouse leaves the map
+        map.on('mouseout', () => {
+          map.closePopup(popup);
+        });
       } else {
         console.error('No valid points to display on the map.');
       }
