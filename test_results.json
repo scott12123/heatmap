@@ -1,26 +1,4 @@
 [
-  { 
-    "timestamp": 1752012279,
-    "type": "speedtest",
-    "scan_result": {
-      "ssid": "APN staff",
-      "bssid": "B4:A2:5C:76:66:70",
-      "signal_quality": 59
-    },
-    "speedtest": {
-      "ping_ms": 34.017,
-      "download_mbps": 86.56,
-      "upload_mbps": 33.83,
-      "server": "AARNet",
-      "bssid": "B4:A2:5C:76:66:70",
-      "rssi_dbm": -61
-    },
-    "browser_load_times_ms": {
-      "https://www.google.com": 411.88,
-      "https://www.yahoo.com": 172.7,
-      "https://www.bom.gov.au": 180.72
-    }
-  },
   {
     "timestamp": 1752012300,
     "type": "signal_scan",
