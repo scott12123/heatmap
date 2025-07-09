@@ -1,35 +1,16 @@
 [
   {
-    "timestamp": 1752012300,
+    "timestamp": 1752101940,
     "type": "signal_scan",
-    "latitude": -37.865182191674634,
-    "longitude": 145.04814371589615,
+    "latitude": -31.90055866475571,
+    "longitude": 133.42490189493097,
     "scan_result": {
       "ssid": "APN staff",
-      "bssid": "B4:A2:5C:76:66:70",
-      "signal_quality": 57
-    }
-  },
-  {
-    "timestamp": 1752012310,
-    "type": "signal_scan",
-    "latitude": -37.736261993075075,
-    "longitude": 144.99572430239303,
-    "scan_result": {
-      "ssid": "APN staff",
-      "bssid": "B4:A2:5C:76:66:70",
-      "signal_quality": 59
-    }
-  },
-  {
-    "timestamp": 1752012320,
-    "type": "signal_scan",
-    "latitude": -37.74439073416801,
-    "longitude": 145.0056279899392,
-    "scan_result": {
-      "ssid": "APN staff",
-      "bssid": "B4:A2:5C:76:66:70",
-      "signal_quality": 59
+      "bssid": "e6:5e:1b:a2:cd:81",
+      "rssi_dbm": -36,
+      "channel": "11",
+      "latitude": -31.901558772683405,
+      "longitude": 133.42856971559996
     }
   }
 ]
