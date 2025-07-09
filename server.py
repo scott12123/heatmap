@@ -8,12 +8,14 @@ import sys
 import time
 
 PORT = 8500
-BASE_DIR = pathlib.Path('/home/pi/heatmap')  # Base directory for the server
+# Base directory for the server (folder containing this script)
+BASE_DIR = pathlib.Path(__file__).resolve().parent
 
 class Handler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path == '/data':
-            file_path = pathlib.Path('/test_results.json')
+            # Load test results from a JSON file located in BASE_DIR
+            file_path = BASE_DIR / 'test_results.json'
             if file_path.exists():
                 try:
                     with file_path.open() as f:
