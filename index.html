@@ -15,7 +15,8 @@
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
   <script>
-    fetch('/data') <!-- Updated to match the server endpoint -->
+    // Load test data from the bundled JSON file
+    fetch('test_results.json')
       .then(r => r.json())
       .then(raw => {
         const items = Array.isArray(raw) ? raw : [raw];
