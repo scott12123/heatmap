@@ -81,10 +81,16 @@
         }).addTo(map);
 
         // Add layer control to toggle between default and satellite views
-        L.control.layers({
+        const layerControl = L.control.layers({
           'Default View': defaultLayer,
           'Satellite View': satelliteLayer
         }).addTo(map);
+
+        // Ensure the layer control is always expanded
+        const layerControlElement = document.querySelector('.leaflet-control-layers');
+        if (layerControlElement) {
+          layerControlElement.classList.add('leaflet-control-layers-expanded');
+        }
 
         // Create a popup for displaying the signal strength of the closest point
         const popup = L.popup();
