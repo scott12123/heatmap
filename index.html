@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Signal Heatmap</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="/leaflet/leaflet.css" />
   <style>
     html, body, #map { height: 100%; margin: 0; }
   </style>
@@ -12,8 +12,8 @@
 <body>
   <div id="map"></div>
 
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+  <script src="/leaflet/leaflet.js"></script>
+  <script src="/leaflet/leaflet-heat.js"></script>
   <script>
   fetch('/data')
     .then(r => r.json())
