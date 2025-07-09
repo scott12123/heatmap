@@ -53,7 +53,8 @@
               lat: parseFloat(i.latitude),
               lng: parseFloat(i.longitude),
               intensity: normalizedRssi, // Use normalized RSSI for heatmap intensity
-              ssid: i.scan_result.ssid, // Include SSID for popup
+              ssid: i.scan_result.ssid,  // Include SSID for popup
+              bssid: i.scan_result.bssid, // Include AP MAC address for popup
               rssi: rssi // Include raw RSSI value for popup
             };
           });
@@ -85,8 +86,8 @@
               radius: 35,
               gradient: {
                 0.0: 'blue',   // 0% intensity
-                0.5: 'green',  // 30% intensity
-                0.7: 'yellow', // 60% intensity
+                0.3: 'green',  // 30% intensity
+                0.6: 'yellow', // 60% intensity
                 1.0: 'red'     // 100% intensity
               }
             }
@@ -104,7 +105,7 @@
             layerControlElement.classList.add('leaflet-control-layers-expanded');
           }
 
-          // Create a popup for displaying the signal strength and SSID of the closest point
+          // Create a popup for displaying the signal strength, SSID, and AP MAC of the closest point
           const popup = L.popup();
           const radiusThreshold = 50; // Define the radius threshold (in meters)
 
@@ -131,8 +132,10 @@
               popup
                 .setLatLng(e.latlng) // Set the popup position to the mouse location
                 .setContent(
-                  `SSID: ${closestPoint.ssid}<br>Signal Strength (RSSI): ${closestPoint.rssi} dBm`
-                ) // Update the content with SSID and raw RSSI value
+                  `SSID: ${closestPoint.ssid}<br>
+                   AP MAC: ${closestPoint.bssid}<br>
+                   Signal Strength (RSSI): ${closestPoint.rssi} dBm`
+                ) // Update the content with SSID, AP MAC, and raw RSSI value
                 .openOn(map); // Open the popup on the map
             } else {
               map.closePopup(popup); // Close the popup if no point is within the radius
