@@ -32,7 +32,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             # Serve static files (e.g., index.html)
             if self.path == '/':
                 self.path = '/index.html'
-            self.path = str(BASE_DIR / self.path.lstrip('/'))
             return http.server.SimpleHTTPRequestHandler.do_GET(self)
 
 def find_and_kill_existing_process(port):
@@ -86,6 +85,9 @@ if __name__ == '__main__':
 
     # Check if the port is already in use and kill the process if necessary
     find_and_kill_existing_process(PORT)
+
+    # Ensure that the HTTP server serves files from this directory
+    os.chdir(BASE_DIR)
 
     # Start the server
     start_server()
