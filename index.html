@@ -15,32 +15,44 @@
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
   <script>
-    // Load test data from the bundled JSON file
-    fetch('test_results.json')
-      .then(r => r.json())
-      .then(raw => {
-        const items = Array.isArray(raw) ? raw : [raw];
-        const points = items.map(i => [i.latitude, i.longitude, (i.scan_result && i.scan_result.signal_quality ? i.scan_result.signal_quality / 100 : 0.5)]);
-        const map = L.map('map').setView([0, 0], 2);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '© OpenStreetMap contributors'
+  fetch('/data')
+    .then(r => r.json())
+    .then(raw => {
+      const items = Array.isArray(raw) ? raw : [raw];
+      // Filter out entries without valid latitude and longitude
+      const points = items
+        .filter(i => i.latitude !== undefined && i.longitude !== undefined) // Ensure lat/lng exist
+        .map(i => [
+          parseFloat(i.latitude),
+          parseFloat(i.longitude),
+          i.scan_result && i.scan_result.signal_quality
+            ? i.scan_result.signal_quality / 100
+            : 0.5 // Default intensity if signal_quality is missing
+        ]);
+
+      const map = L.map('map').setView([0, 0], 2);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(map);
+
+      if (points.length) {
+        const avgLat = points.reduce((a, p) => a + p[0], 0) / points.length;
+        const avgLng = points.reduce((a, p) => a + p[1], 0) / points.length;
+        map.setView([avgLat, avgLng], 13);
+        L.heatLayer(points, {
+          radius: 25,
+          gradient: {
+            0.0: 'blue',   // 0% intensity
+            0.3: 'green',  // 30% intensity
+            0.6: 'yellow', // 60% intensity
+            1.0: 'red'     // 100% intensity
+          }
         }).addTo(map);
-        if (points.length) {
-          const avgLat = points.reduce((a, p) => a + p[0], 0) / points.length;
-          const avgLng = points.reduce((a, p) => a + p[1], 0) / points.length;
-          map.setView([avgLat, avgLng], 13);
-          L.heatLayer(points, {
-            radius: 25,
-            gradient: {
-              0.0: 'blue',   // 0% intensity
-              0.3: 'green',  // 30% intensity
-              0.6: 'yellow', // 60% intensity
-              1.0: 'red'     // 100% intensity
-            }
-          }).addTo(map);
-        }
-      })
-      .catch(err => console.error('Failed to load data', err));
-  </script>
+      } else {
+        console.error('No valid points to display on the map.');
+      }
+    })
+    .catch(err => console.error('Failed to load data', err));
+</script>
 </body>
 </html>
