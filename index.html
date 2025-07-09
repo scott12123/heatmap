@@ -36,10 +36,11 @@
       }).addTo(map);
 
       if (points.length) {
-        const avgLat = points.reduce((a, p) => a + p[0], 0) / points.length;
-        const avgLng = points.reduce((a, p) => a + p[1], 0) / points.length;
+        // Create a LatLngBounds object to store the bounds of all points
+        const bounds = L.latLngBounds(points.map(point => [point[0], point[1]]));
 
-        map.setView([avgLat, avgLng], 13);
+        // Fit the map's view to the bounds of all points
+        map.fitBounds(bounds);
 
         const heatLayer = L.heatLayer(points, {
           radius: 25,
