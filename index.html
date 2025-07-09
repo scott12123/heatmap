@@ -29,7 +29,15 @@
           const avgLat = points.reduce((a, p) => a + p[0], 0) / points.length;
           const avgLng = points.reduce((a, p) => a + p[1], 0) / points.length;
           map.setView([avgLat, avgLng], 13);
-          L.heatLayer(points, { radius: 25 }).addTo(map);
+          L.heatLayer(points, {
+            radius: 25,
+            gradient: {
+              0.0: 'blue',   // 0% intensity
+              0.3: 'green',  // 30% intensity
+              0.6: 'yellow', // 60% intensity
+              1.0: 'red'     // 100% intensity
+            }
+          }).addTo(map);
         }
       })
       .catch(err => console.error('Failed to load data', err));
