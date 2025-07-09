@@ -8,13 +8,11 @@ import sys
 import time
 
 PORT = 8500
-# Base directory for the server (folder containing this script)
 BASE_DIR = pathlib.Path(__file__).resolve().parent
 
 class Handler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path == '/data':
-            # Load test results from a JSON file located in BASE_DIR
             file_path = BASE_DIR / 'test_results.json'
             if file_path.exists():
                 try:
@@ -29,7 +27,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(json.dumps(data).encode())
         else:
-            # Serve static files (e.g., index.html)
             if self.path == '/':
                 self.path = '/index.html'
             return http.server.SimpleHTTPRequestHandler.do_GET(self)
@@ -37,10 +34,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 def find_and_kill_existing_process(port):
     """Find and kill any process using the specified port."""
     try:
-        # Find the process using the port
         result = os.popen(f"sudo netstat -tuln | grep :{port}").read()
         if result:
-            pid = int(result.split()[-1].split('/')[0])  # Extract the PID
+            pid = int(result.split()[-1].split('/')[0])
             print(f"Port {port} is in use by PID {pid}. Killing it...")
             os.kill(pid, signal.SIGKILL)
             print(f"Process {pid} killed successfully.")
@@ -71,7 +67,7 @@ def start_server():
             if "Address already in use" in str(e):
                 print(f"Port {PORT} is still in use. Retrying... ({attempt + 1}/{retries})")
                 find_and_kill_existing_process(PORT)
-                time.sleep(1)  # Wait a moment before retrying
+                time.sleep(1) #wait to retry again
             else:
                 raise
     else:
@@ -79,15 +75,13 @@ def start_server():
         sys.exit(1)
 
 if __name__ == '__main__':
-    # Register signal handlers for graceful shutdown
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
-    # Check if the port is already in use and kill the process if necessary
+    # If the port is already in use then kill
     find_and_kill_existing_process(PORT)
 
-    # Ensure that the HTTP server serves files from this directory
     os.chdir(BASE_DIR)
 
-    # Start the server
+    # Start
     start_server()

@@ -6,25 +6,28 @@
   <title>Signal Heatmap</title>
   <link rel="stylesheet" href="/leaflet/leaflet.css" />
   <style>
-    html, body, #map { height: 100%; margin: 0; }
+    html, body, #map {
+      height: 100%;
+      margin: 0;
+    }
 
     .leaflet-control-layers-expanded {
-      display: block !important; /* Ensure the control is always expanded */
-      background: white; /* Set a visible background color */
-      padding: 5px; /* Add some padding for better appearance */
-      border-radius: 5px; /* Optional: Add rounded corners */
-      box-shadow: 0 1px 5px rgba(0, 0, 0, 0.65); /* Optional: Add a shadow for better visibility */
+      display: block !important;
+      background: white;
+      padding: 5px;
+      border-radius: 5px;
+      box-shadow: 0 1px 5px rgba(0, 0, 0, 0.65);
     }
 
     .leaflet-control-layers-expanded input[type="radio"] {
-      display: inline-block; /* Ensure radio buttons are visible */
-      margin-right: 5px; /* Add spacing between the radio button and text */
+      display: inline-block;
+      margin-right: 5px;
     }
 
     .leaflet-control-layers-expanded label {
-      display: inline-block; /* Ensure labels are visible */
-      margin-bottom: 5px; /* Add spacing between options */
-      cursor: pointer; /* Make the labels clickable */
+      display: inline-block;
+      margin-bottom: 5px;
+      cursor: pointer;
     }
   </style>
 </head>
@@ -34,102 +37,103 @@
   <script src="/leaflet/leaflet.js"></script>
   <script src="/leaflet/leaflet-heat.js"></script>
   <script>
-  fetch('/data')
-    .then(r => r.json())
-    .then(raw => {
-      const items = Array.isArray(raw) ? raw : [raw];
-      // Filter out entries without valid latitude and longitude
-      const points = items
-        .filter(i => i.latitude !== undefined && i.longitude !== undefined) // Ensure lat/lng exist
-        .map(i => [
-          parseFloat(i.latitude),
-          parseFloat(i.longitude),
-          i.scan_result && i.scan_result.signal_quality
-            ? i.scan_result.signal_quality / 100
-            : 0.5 // Default intensity if signal_quality is missing
-        ]);
+    fetch('/data')
+      .then(r => r.json())
+      .then(raw => {
+        const items = Array.isArray(raw) ? raw : [raw];
 
-      const map = L.map('map').setView([0, 0], 2);
+        // Ignore payloads without valid lat and long
+        const points = items
+          .filter(i => i.latitude !== undefined && i.longitude !== undefined)
+          .map(i => [
+            parseFloat(i.latitude),
+            parseFloat(i.longitude),
+            i.scan_result && i.scan_result.signal_quality
+              ? i.scan_result.signal_quality / 100
+              : 0.5 // Default point intensity if signal_quality is missing
+          ]);
 
-      // Define the default map layer
-      const defaultLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
-      });
+        const map = L.map('map').setView([0, 0], 2);
 
-      // Define the satellite map layer
-      const satelliteLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-        attribution: '© Google Maps',
-        subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
-      });
+        // Standard map
+        const defaultLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors'
+        });
 
-      // Add the default layer to the map
-      defaultLayer.addTo(map);
+        // Satellite map
+        const satelliteLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+          attribution: '© Google Maps',
+          subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+        });
 
-      // Add the heatmap layer
-      if (points.length) {
-        const bounds = L.latLngBounds(points.map(point => [point[0], point[1]]));
-        map.fitBounds(bounds);
+        // Start with default layer
+        defaultLayer.addTo(map);
 
-        const heatLayer = L.heatLayer(points, {
-          radius: 35,
-          gradient: {
-            0.0: 'blue',   // 0% intensity
-            0.3: 'green',  // 30% intensity
-            0.6: 'yellow', // 60% intensity
-            1.0: 'red'     // 100% intensity
+        // Add points to make heatmap
+        if (points.length) {
+          const bounds = L.latLngBounds(points.map(point => [point[0], point[1]]));
+          map.fitBounds(bounds);
+
+          const heatLayer = L.heatLayer(points, {
+            radius: 35,
+            gradient: {
+              0.0: 'blue',   // 0% intensity
+              0.3: 'green',  // 30% intensity
+              0.6: 'yellow', // 60% intensity
+              1.0: 'red'     // 100% intensity
+            }
+          }).addTo(map);
+
+          // Switch between layers
+          const layerControl = L.control.layers({
+            'Default View': defaultLayer,
+            'Satellite View': satelliteLayer
+          }).addTo(map);
+
+          // Always show the map controls
+          const layerControlElement = document.querySelector('.leaflet-control-layers');
+          if (layerControlElement) {
+            layerControlElement.classList.add('leaflet-control-layers-expanded');
           }
-        }).addTo(map);
 
-        // Add layer control to toggle between default and satellite views
-        const layerControl = L.control.layers({
-          'Default View': defaultLayer,
-          'Satellite View': satelliteLayer
-        }).addTo(map);
+          // Popup to show nearest signal strength to mouse
+          const popup = L.popup();
+          const radiusThreshold = 50; // Meters mouse to point
 
-        // Ensure the layer control is always expanded
-        const layerControlElement = document.querySelector('.leaflet-control-layers');
-        if (layerControlElement) {
-          layerControlElement.classList.add('leaflet-control-layers-expanded');
-        }
+          // Find the closest point to the mouse
+          function findClosestPoint(latlng) {
+            let closestPoint = null;
+            let minDistance = Infinity;
 
-        // Create a popup for displaying the signal strength of the closest point
-        const popup = L.popup();
-        const radiusThreshold = 50; // Define the radius threshold (in meters)
+            points.forEach(point => {
+              const distance = map.distance(latlng, L.latLng(point[0], point[1]));
+              if (distance < minDistance) {
+                minDistance = distance;
+                closestPoint = point;
+              }
+            });
 
-        // Function to find the closest point to the mouse location
-        function findClosestPoint(latlng) {
-          let closestPoint = null;
-          let minDistance = Infinity;
+            return { closestPoint, minDistance };
+          }
 
-          points.forEach(point => {
-            const distance = map.distance(latlng, L.latLng(point[0], point[1]));
-            if (distance < minDistance) {
-              minDistance = distance;
-              closestPoint = point;
+          // Update popup
+          map.on('mousemove', (e) => {
+            const { closestPoint, minDistance } = findClosestPoint(e.latlng);
+            if (closestPoint && minDistance <= radiusThreshold) {
+              const signalStrength = (closestPoint[2] * 100).toFixed(2);
+              popup
+                .setLatLng(e.latlng)
+                .setContent(`Signal Strength: ${signalStrength}%`)
+                .openOn(map);
+            } else {
+              map.closePopup(popup);
             }
           });
-
-          return { closestPoint, minDistance };
+        } else {
+          console.error('No valid points to display on the map.');
         }
-
-        // Update the popup dynamically on mousemove
-        map.on('mousemove', (e) => {
-          const { closestPoint, minDistance } = findClosestPoint(e.latlng);
-          if (closestPoint && minDistance <= radiusThreshold) {
-            const signalStrength = (closestPoint[2] * 100).toFixed(2); // Convert intensity back to percentage
-            popup
-              .setLatLng(e.latlng) // Set the popup position to the mouse location
-              .setContent(`Signal Strength: ${signalStrength}%`) // Update the content
-              .openOn(map); // Open the popup on the map
-          } else {
-            map.closePopup(popup); // Close the popup if no point is within the radius
-          }
-        });
-      } else {
-        console.error('No valid points to display on the map.');
-      }
-    })
-    .catch(err => console.error('Failed to load data', err));
-</script>
+      })
+      .catch(err => console.error('Failed to load data', err));
+  </script>
 </body>
 </html>
