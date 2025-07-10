@@ -10,6 +10,24 @@
       height: 100%;
       margin: 0;
     }
+    .legend {
+      position: absolute;
+      bottom: 30px;
+      left: 10px;
+      background: white;
+      padding: 10px;
+      border-radius: 5px;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+      font-size: 14px;
+      line-height: 18px;
+    }
+    .legend i {
+      width: 18px;
+      height: 18px;
+      float: left;
+      margin-right: 8px;
+      opacity: 0.7;
+    }
   </style>
 </head>
 <body>
@@ -90,9 +108,23 @@
 
         const map = L.map('map');
 
-        // Define the default map layer
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        // Define the default map layers
+        const defaultLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '© OpenStreetMap contributors'
+        });
+
+        const satelliteLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+          attribution: '© Google',
+          subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+        });
+
+        // Add the default layer to the map
+        defaultLayer.addTo(map);
+
+        // Add layer control to switch between layers
+        L.control.layers({
+          'OpenStreetMap': defaultLayer,
+          'Google Satellite': satelliteLayer
         }).addTo(map);
 
         if (clusters.length > 0) {
@@ -138,6 +170,24 @@
               : `No SSID Found`
           );
         });
+
+        // Add a legend to the map
+        const legend = L.control({ position: 'bottomleft' });
+
+        legend.onAdd = function () {
+          const div = L.DomUtil.create('div', 'legend');
+          div.innerHTML = `
+            <strong>Signal Strength</strong><br>
+            <i style="background: blue"></i> Unknown<br>
+            <i style="background: green"></i> Strong (≥ -40 dBm)<br>
+            <i style="background: yellow"></i> Good (≥ -50 dBm)<br>
+            <i style="background: orange"></i> Average (≥ -60 dBm)<br>
+            <i style="background: red"></i> Poor (< -60 dBm)
+          `;
+          return div;
+        };
+
+        legend.addTo(map);
       })
       .catch(err => console.error('Failed to load data', err));
   </script>
