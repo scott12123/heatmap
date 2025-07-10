@@ -107,7 +107,7 @@
         // Add circles for each cluster
         clusters.forEach(cluster => {
           let color;
-          if (cluster.rssi === null) {
+          if (cluster.rssi === null || cluster.rssi === 0) {
             color = 'blue'; // Unknown signal strength
           } else if (cluster.rssi >= -40) {
             color = 'green'; // Strong signal
@@ -129,7 +129,7 @@
 
           // Add a popup with RSSI information
           circle.bindPopup(
-            cluster.ssid && cluster.bssid && cluster.rssi !== null
+            cluster.ssid && cluster.bssid && cluster.rssi !== null && cluster.rssi !== 0
               ? `SSID: ${cluster.ssid}<br>
                  MAC: ${cluster.bssid}<br>
                  RSSI: ${cluster.rssi.toFixed(2)} dBm<br>
