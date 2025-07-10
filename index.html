@@ -163,7 +163,7 @@
           // Add a popup with RSSI information
           const popupContent = cluster.ssid && cluster.bssid && cluster.rssi !== null && cluster.rssi !== 0
             ? `SSID: ${cluster.ssid}<br>
-               MAC: ${cluster.bssid}<br>
+               MAC: ${cluster.bssid.toUpperCase()}<br>
                RSSI: ${cluster.rssi} dB<br>
                Channel: ${cluster.channel || 'Unknown'}<br>
                Location: ${cluster.lat.toFixed(5)}, ${cluster.lon.toFixed(5)}`
