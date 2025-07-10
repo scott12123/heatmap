@@ -54,9 +54,18 @@
       const clusters = [];
 
       data.forEach(point => {
+        // Validate the data point and assign default values if necessary
         const lat = point.latitude;
         const lon = point.longitude;
-        const rssi = point.scan_result.rssi_dbm;
+        const rssi = point.scan_result && typeof point.scan_result.rssi_dbm === 'number'
+          ? point.scan_result.rssi_dbm
+          : 0; // Default to 0 if rssi_dbm is null or undefined
+
+        if (typeof lat !== 'number' || typeof lon !== 'number') {
+          console.warn('Invalid data point skipped:', point);
+          return; // Skip invalid points
+        }
+
         let addedToCluster = false;
 
         for (const cluster of clusters) {
