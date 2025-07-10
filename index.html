@@ -3,33 +3,12 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Signal Heatmap</title>
+  <title>Wi-Fi Signal Quality Map</title>
   <link rel="stylesheet" href="/leaflet/leaflet.css" />
-  <link rel="stylesheet" href="/leaflet/MarkerCluster.css" />
-  <link rel="stylesheet" href="/leaflet/MarkerCluster.Default.css" />
   <style>
     html, body, #map {
       height: 100%;
       margin: 0;
-    }
-
-    .leaflet-control-layers-expanded {
-      display: block !important;
-      background: white;
-      padding: 5px;
-      border-radius: 5px;
-      box-shadow: 0 1px 5px rgba(0, 0, 0, 0.65);
-    }
-
-    .leaflet-control-layers-expanded input[type="radio"] {
-      display: inline-block;
-      margin-right: 5px;
-    }
-
-    .leaflet-control-layers-expanded label {
-      display: inline-block;
-      margin-bottom: 5px;
-      cursor: pointer;
     }
   </style>
 </head>
@@ -37,8 +16,6 @@
   <div id="map"></div>
 
   <script src="/leaflet/leaflet.js"></script>
-  <script src="/leaflet/leaflet-heat.js"></script>
-  <script src="/leaflet/leaflet.markercluster.js"></script>
   <script>
     // Haversine formula to calculate the distance between two points
     function haversine(lat1, lon1, lat2, lon2) {
@@ -52,17 +29,16 @@
       return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
 
-    // Cluster points within a specified distance threshold
-    function clusterPoints(data, distanceThreshold = 20) {
+    // Group scans within a specified distance threshold
+    function groupScans(data, distanceThreshold = 5) {
       const clusters = [];
 
       data.forEach(point => {
-        // Validate the data point and assign default values if necessary
         const lat = point.latitude;
         const lon = point.longitude;
         const rssi = point.scan_result && typeof point.scan_result.rssi_dbm === 'number'
           ? point.scan_result.rssi_dbm
-          : 0; // Default to 0 if rssi_dbm is null or undefined
+          : 0; // Default RSSI to 0 if missing
 
         if (typeof lat !== 'number' || typeof lon !== 'number') {
           console.warn('Invalid data point skipped:', point);
@@ -75,11 +51,10 @@
           const clusterLat = cluster.lat;
           const clusterLon = cluster.lon;
           if (haversine(lat, lon, clusterLat, clusterLon) <= distanceThreshold) {
-            // Update cluster with new point
+            // Merge into the cluster
             cluster.lat = (cluster.lat * cluster.count + lat) / (cluster.count + 1);
             cluster.lon = (cluster.lon * cluster.count + lon) / (cluster.count + 1);
             cluster.rssi = (cluster.rssi * cluster.count + rssi) / (cluster.count + 1);
-            cluster.points.push([lat, lon]);
             cluster.count += 1;
             addedToCluster = true;
             break;
@@ -88,7 +63,7 @@
 
         if (!addedToCluster) {
           // Create a new cluster
-          clusters.push({ lat, lon, rssi, count: 1, points: [[lat, lon]] });
+          clusters.push({ lat, lon, rssi, count: 1 });
         }
       });
 
@@ -99,50 +74,48 @@
     fetch('/data')
       .then(response => response.json())
       .then(rawData => {
-        const clusters = clusterPoints(rawData);
+        const clusters = groupScans(rawData);
 
-        const map = L.map('map').setView([0, 0], 10);
+        // Calculate the average location for centering the map
+        const avgLat = clusters.reduce((sum, c) => sum + c.lat, 0) / clusters.length;
+        const avgLon = clusters.reduce((sum, c) => sum + c.lon, 0) / clusters.length;
+
+        const map = L.map('map').setView([avgLat, avgLon], 15);
 
         // Define the default map layer
-        const defaultLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '© OpenStreetMap contributors'
         }).addTo(map);
 
-        // Create a marker cluster group
-        const markers = L.markerClusterGroup();
-
-        // Add markers for each cluster
+        // Add circles for each cluster
         clusters.forEach(cluster => {
-          const marker = L.marker([cluster.lat, cluster.lon])
-            .bindPopup(
-              `<b>Cluster Info:</b><br>
-              Latitude: ${cluster.lat.toFixed(5)}<br>
-              Longitude: ${cluster.lon.toFixed(5)}<br>
-              Avg RSSI: ${cluster.rssi.toFixed(2)} dBm<br>
-              Points: ${cluster.count}`
-            );
-          markers.addLayer(marker);
+          let color;
+          if (cluster.rssi === 0) {
+            color = 'blue'; // Unknown signal strength
+          } else if (cluster.rssi >= -60) {
+            color = 'green'; // Strong signal
+          } else if (cluster.rssi >= -75) {
+            color = 'yellow'; // Average signal
+          } else {
+            color = 'red'; // Poor signal
+          }
 
-          // Draw a polygon around the cluster points
-          const polygon = L.polygon(cluster.points, {
-            color: 'blue',
-            weight: 2,
-            fillColor: 'lightblue',
-            fillOpacity: 0.4
+          // Draw a circle for the cluster
+          const circle = L.circle([cluster.lat, cluster.lon], {
+            color: color,
+            fillColor: color,
+            fillOpacity: 0.4,
+            radius: 20 // Fixed radius for visualization
           }).addTo(map);
-          polygon.bindPopup(
-            `<b>Cluster Boundary:</b><br>
-            Points: ${cluster.count}<br>
-            Avg RSSI: ${cluster.rssi.toFixed(2)} dBm`
+
+          // Add a popup with RSSI information
+          circle.bindPopup(
+            `<b>Signal Quality:</b><br>
+            RSSI: ${cluster.rssi.toFixed(2)} dBm<br>
+            Location: (${cluster.lat.toFixed(5)}, ${cluster.lon.toFixed(5)})<br>
+            Points Merged: ${cluster.count}`
           );
         });
-
-        // Add the marker cluster group to the map
-        map.addLayer(markers);
-
-        // Fit the map to the bounds of all clusters
-        const bounds = L.latLngBounds(clusters.map(c => [c.lat, c.lon]));
-        map.fitBounds(bounds);
       })
       .catch(err => console.error('Failed to load data', err));
   </script>
