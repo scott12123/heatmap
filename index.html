@@ -39,6 +39,8 @@
         const rssi = point.scan_result && typeof point.scan_result.rssi_dbm === 'number'
           ? point.scan_result.rssi_dbm
           : 0; // Default RSSI to 0 if missing
+        const ssid = point.scan_result && point.scan_result.ssid ? point.scan_result.ssid : 'Unknown';
+        const bssid = point.scan_result && point.scan_result.bssid ? point.scan_result.bssid : 'Unknown';
 
         if (typeof lat !== 'number' || typeof lon !== 'number') {
           console.warn(`Invalid data point skipped: ${JSON.stringify(point)}`);
@@ -56,6 +58,15 @@
             cluster.lon = (cluster.lon * cluster.count + lon) / (cluster.count + 1);
             cluster.rssi = (cluster.rssi * cluster.count + rssi) / (cluster.count + 1);
             cluster.count += 1;
+
+            // Keep the SSID and BSSID of the first point in the cluster
+            if (!cluster.ssid || cluster.ssid === 'Unknown') {
+              cluster.ssid = ssid;
+            }
+            if (!cluster.bssid || cluster.bssid === 'Unknown') {
+              cluster.bssid = bssid;
+            }
+
             addedToCluster = true;
             break;
           }
@@ -63,7 +74,7 @@
 
         if (!addedToCluster) {
           // Create a new cluster
-          clusters.push({ lat, lon, rssi, count: 1 });
+          clusters.push({ lat, lon, rssi, ssid, bssid, count: 1 });
         }
       });
 
