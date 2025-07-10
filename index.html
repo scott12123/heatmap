@@ -38,7 +38,7 @@
         const lon = point.longitude;
         const rssi = point.scan_result && typeof point.scan_result.rssi_dbm === 'number'
           ? point.scan_result.rssi_dbm
-          : null; // Default RSSI to null if missing
+          : null; // Keep RSSI as null if missing
         const ssid = point.scan_result && point.scan_result.ssid ? point.scan_result.ssid : null;
         const bssid = point.scan_result && point.scan_result.bssid ? point.scan_result.bssid : null;
         const channel = point.scan_result && point.scan_result.channel ? point.scan_result.channel : null;
@@ -58,8 +58,10 @@
             cluster.lat = (cluster.lat + lat) / 2; // Average latitude
             cluster.lon = (cluster.lon + lon) / 2; // Average longitude
             cluster.rssi = cluster.rssi !== null && rssi !== null
-              ? (cluster.rssi + rssi) / 2
-              : cluster.rssi || rssi; // Average RSSI if both exist, otherwise keep the existing one
+              ? (cluster.rssi + rssi) / 2 // Average RSSI if both exist
+              : cluster.rssi !== null
+              ? cluster.rssi // Keep existing RSSI if only it exists
+              : rssi; // Otherwise, use the new RSSI (which might be null)
 
             // Keep the SSID, BSSID, and channel of the first point in the cluster
             if (!cluster.ssid) cluster.ssid = ssid;
