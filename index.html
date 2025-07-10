@@ -37,132 +37,87 @@
   <script src="/leaflet/leaflet.js"></script>
   <script src="/leaflet/leaflet-heat.js"></script>
   <script>
+    // Haversine formula to calculate the distance between two points
+    function haversine(lat1, lon1, lat2, lon2) {
+      const R = 6371000; // Earth radius in meters
+      const toRad = angle => (Math.PI / 180) * angle;
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+      const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    // Cluster points within a specified distance threshold
+    function clusterPoints(data, distanceThreshold = 20) {
+      const clusters = [];
+
+      data.forEach(point => {
+        const lat = point.latitude;
+        const lon = point.longitude;
+        const rssi = point.scan_result.rssi_dbm;
+        let addedToCluster = false;
+
+        for (const cluster of clusters) {
+          const clusterLat = cluster.lat;
+          const clusterLon = cluster.lon;
+          if (haversine(lat, lon, clusterLat, clusterLon) <= distanceThreshold) {
+            // Update cluster with new point
+            cluster.lat = (cluster.lat * cluster.count + lat) / (cluster.count + 1);
+            cluster.lon = (cluster.lon * cluster.count + lon) / (cluster.count + 1);
+            cluster.rssi = (cluster.rssi * cluster.count + rssi) / (cluster.count + 1);
+            cluster.count += 1;
+            addedToCluster = true;
+            break;
+          }
+        }
+
+        if (!addedToCluster) {
+          // Create a new cluster
+          clusters.push({ lat, lon, rssi, count: 1 });
+        }
+      });
+
+      // Normalize RSSI to a 0–1 range
+      return clusters.map(cluster => ({
+        lat: cluster.lat,
+        lon: cluster.lon,
+        weight: Math.max(0, Math.min(1, (cluster.rssi + 100) / 70)) // Normalize RSSI (-100 to -30)
+      }));
+    }
+
+    // Fetch raw data and process it
     fetch('/data')
-      .then(r => r.json())
-      .then(raw => {
-        const items = Array.isArray(raw) ? raw : [raw];
+      .then(response => response.json())
+      .then(rawData => {
+        const clusters = clusterPoints(rawData);
 
-        // Normalize RSSI values and filter out invalid lat/lng. Points with
-        // null/NaN RSSI are treated as zero intensity so that they render as
-        // the lowest value (blue) on the heatmap.
-        const points = items
-          .filter(i =>
-            i.latitude !== undefined &&
-            i.longitude !== undefined &&
-            i.scan_result &&
-            i.scan_result.rssi_dbm !== undefined &&
-            i.scan_result.rssi_dbm !== null
-          )
-          .map(i => {
-            const rssi = parseFloat(i.scan_result.rssi_dbm);
-            // Normalize RSSI: Convert negative RSSI to a 0-1 scale (e.g., -100 to 0 becomes 0 to 1)
-            const normalizedRssi = isNaN(rssi)
-              ? 0
-              : Math.min(1, Math.max(0, (rssi + 100) / 100));
-            return {
-              lat: parseFloat(i.latitude),
-              lng: parseFloat(i.longitude),
-              intensity: normalizedRssi, // Use normalized RSSI for heatmap intensity
-              ssid: i.scan_result.ssid,  // Include SSID for popup
-              bssid: i.scan_result.bssid, // Include AP MAC address for popup
-              rssi: rssi // Include raw RSSI value for popup
-            };
-          });
-
-        const map = L.map('map', {
-          //center: [0, 0], // Set the initial center of the map
-          zoom: 10, // Set the fixed zoom level
-          zoomControl: false, // Disable the zoom control buttons
-          scrollWheelZoom: false, // Disable zooming with the mouse wheel
-          doubleClickZoom: false, // Disable zooming by double-clicking
-          touchZoom: false, // Disable zooming on touch devices
-          dragging: false // Disable dragging the map
-        });
+        const map = L.map('map').setView([0, 0], 10);
 
         // Define the default map layer
         const defaultLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '© OpenStreetMap contributors'
-        });
-
-        // Define the satellite map layer
-        const satelliteLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-          attribution: '© Google Maps',
-          subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
-        });
-
-        // Add the default layer to the map
-        defaultLayer.addTo(map);
+        }).addTo(map);
 
         // Add the heatmap layer
-        if (points.length) {
-          const bounds = L.latLngBounds(points.map(point => [point.lat, point.lng]));
+        if (clusters.length) {
+          const bounds = L.latLngBounds(clusters.map(c => [c.lat, c.lon]));
           map.fitBounds(bounds);
 
           const heatLayer = L.heatLayer(
-            points.map(point => [point.lat, point.lng, point.intensity]),
+            clusters.map(c => [c.lat, c.lon, c.weight]),
             {
-              radius: 10,
-              max: 1, // Set the maximum intensity value (normalized to 1)
-              // minOpacity: 0, // Ensure points with zero intensity are fully transparent
-              blur: 1, // Adjust the blur to control the spread of intensity
+              radius: 20,
+              max: 1,
+              blur: 15,
               gradient: {
-                0.0: 'blue',   // 0% intensity (always blue)
-                0.01: 'blue',  // Slightly above 0 is still blue
-                0.3: 'green',  // 30% intensity
-                0.6: 'yellow', // 60% intensity
-                1.0: 'red'     // 100% intensity
+                0.0: 'blue',
+                0.5: 'yellow',
+                1.0: 'red'
               }
             }
           ).addTo(map);
-
-          // Add layer control to toggle between default and satellite views
-          const layerControl = L.control.layers({
-            'Default View': defaultLayer,
-            'Satellite View': satelliteLayer
-          }).addTo(map);
-
-          // Ensure the layer control is always expanded
-          const layerControlElement = document.querySelector('.leaflet-control-layers');
-          if (layerControlElement) {
-            layerControlElement.classList.add('leaflet-control-layers-expanded');
-          }
-
-          // Create a popup for displaying the signal strength, SSID, and AP MAC of the closest point
-          const popup = L.popup();
-          const radiusThreshold = 50; // Define the radius threshold (in meters)
-
-          // Function to find the closest point to the mouse location
-          function findClosestPoint(latlng) {
-            let closestPoint = null;
-            let minDistance = Infinity;
-
-            points.forEach(point => {
-              const distance = map.distance(latlng, L.latLng(point.lat, point.lng));
-              if (distance < minDistance) {
-                minDistance = distance;
-                closestPoint = point;
-              }
-            });
-
-            return { closestPoint, minDistance };
-          }
-
-          // Update the popup dynamically on mousemove
-          map.on('mousemove', (e) => {
-            const { closestPoint, minDistance } = findClosestPoint(e.latlng);
-            if (closestPoint && minDistance <= radiusThreshold) {
-              popup
-                .setLatLng(e.latlng) // Set the popup position to the mouse location
-                .setContent(
-                  `SSID: ${closestPoint.ssid}<br>
-                   AP MAC: ${closestPoint.bssid}<br>
-                   Signal Strength (RSSI): ${closestPoint.rssi} dBm`
-                ) // Update the content with SSID, AP MAC, and raw RSSI value
-                .openOn(map); // Open the popup on the map
-            } else {
-              map.closePopup(popup); // Close the popup if no point is within the radius
-            }
-          });
         } else {
           console.error('No valid points to display on the map.');
         }
