@@ -92,9 +92,9 @@
           let color;
           if (cluster.rssi === 0) {
             color = 'blue'; // Unknown signal strength
-          } else if (cluster.rssi >= -60) {
+          } else if (cluster.rssi >= -35) {
             color = 'green'; // Strong signal
-          } else if (cluster.rssi >= -75) {
+          } else if (cluster.rssi >= -45) {
             color = 'yellow'; // Average signal
           } else {
             color = 'red'; // Poor signal
