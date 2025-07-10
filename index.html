@@ -107,15 +107,7 @@
       .then(rawData => {
         const clusters = groupScans(rawData);
 
-        const map = L.map('map', {
-          center: [0, 0],
-          zoom: 15,
-          zoomControl: false,
-          scrollWheelZoom: false,
-          doubleClickZoom: false,
-          touchZoom: false,
-          dragging: false
-        });
+        const map = L.map('map');
 
         // Define the default map layers
         const defaultLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -136,74 +128,49 @@
           'Google Satellite': satelliteLayer
         }).addTo(map);
 
-        // Function to add circles to the map
-        function addCircles(clusters) {
-          // Clear existing layers
-          map.eachLayer(layer => {
-            if (layer instanceof L.Circle) {
-              map.removeLayer(layer);
-            }
-          });
+        if (clusters.length > 0) {
+          const avgLat = clusters.reduce((sum, c) => sum + c.lat, 0) / clusters.length;
+          const avgLon = clusters.reduce((sum, c) => sum + c.lon, 0) / clusters.length;
+          map.setView([avgLat, avgLon], 15);
+        } else {
+          console.warn('No clusters found. Centering map on default location.');
+          map.setView([0, 0], 2); // Default to world view
+        }
 
-          // Add circles for each cluster
-          clusters.forEach(cluster => {
-            let color;
-            if (cluster.rssi === null || cluster.rssi === 0) {
-              color = 'blue'; // Unknown signal strength
-            } else if (cluster.rssi >= -40) {
-              color = 'green'; // Strong signal
-            } else if (cluster.rssi >= -50) {
-              color = 'yellow'; // Good signal
-            } else if (cluster.rssi >= -60) {
-              color = 'orange'; // Average signal
-            } else {
-              color = 'red'; // Poor signal
-            }
+        // Add circles for each cluster
+        clusters.forEach(cluster => {
+          let color;
+          if (cluster.rssi === null || cluster.rssi === 0) {
+            color = 'blue'; // Unknown signal strength
+          } else if (cluster.rssi >= -40) {
+            color = 'green'; // Strong signal
+          } else if (cluster.rssi >= -50) {
+            color = 'yellow'; // Good signal
+          } else if (cluster.rssi >= -60) {
+            color = 'orange'; // Average signal
+          } else {
+            color = 'red'; // Poor signal
+          }
 
-            // Draw a circle for the cluster
-            const circle = L.circle([cluster.lat, cluster.lon], {
-              color: color,
-              fillColor: color,
-              fillOpacity: 1,
-              radius: 15 // Fixed radius for visualization
-            }).addTo(map);
+          // Draw a circle for the cluster
+          const circle = L.circle([cluster.lat, cluster.lon], {
+            color: color,
+            fillColor: color,
+            fillOpacity: 1,
+            radius: 15 // Fixed radius for visualization
+          }).addTo(map);
 
-            // Add a popup with RSSI information
-            const popupContent = cluster.ssid && cluster.bssid && cluster.rssi !== null && cluster.rssi !== 0
+          // Add a popup with RSSI information
+          circle.bindPopup(
+            cluster.ssid && cluster.bssid && cluster.rssi !== null && cluster.rssi !== 0
               ? `SSID: ${cluster.ssid}<br>
                  MAC: ${cluster.bssid}<br>
                  RSSI: ${cluster.rssi} dB<br>
                  Channel: ${cluster.channel || 'Unknown'}<br>
                  Location: ${cluster.lat.toFixed(5)}, ${cluster.lon.toFixed(5)}`
-              : `No SSID Found`;
-
-            circle.bindPopup(popupContent);
-
-            // Automatically open the popup on hover
-            circle.on('mouseover', () => {
-              circle.openPopup();
-            });
-
-            // Close the popup when the mouse leaves the circle
-            circle.on('mouseout', () => {
-              circle.closePopup();
-            });
-          });
-        }
-
-        // Add initial circles
-        addCircles(clusters);
-
-        // Auto-refresh circles every 10 seconds
-        setInterval(() => {
-          fetch('/data')
-            .then(response => response.json())
-            .then(newData => {
-              const updatedClusters = groupScans(newData);
-              addCircles(updatedClusters);
-            })
-            .catch(err => console.error('Failed to refresh data', err));
-        }, 10000); // Refresh every 10 seconds
+              : `No SSID Found`
+          );
+        });
 
         // Add a legend to the map
         const legend = L.control({ position: 'bottomleft' });
