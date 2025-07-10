@@ -161,15 +161,25 @@
           }).addTo(map);
 
           // Add a popup with RSSI information
-          circle.bindPopup(
-            cluster.ssid && cluster.bssid && cluster.rssi !== null && cluster.rssi !== 0
-              ? `SSID: ${cluster.ssid}<br>
-                 MAC: ${cluster.bssid}<br>
-                 RSSI: ${cluster.rssi} dB<br>
-                 Channel: ${cluster.channel || 'Unknown'}<br>
-                 Location: ${cluster.lat.toFixed(5)}, ${cluster.lon.toFixed(5)}`
-              : `No SSID Found`
-          );
+          const popupContent = cluster.ssid && cluster.bssid && cluster.rssi !== null && cluster.rssi !== 0
+            ? `SSID: ${cluster.ssid}<br>
+               MAC: ${cluster.bssid}<br>
+               RSSI: ${cluster.rssi} dB<br>
+               Channel: ${cluster.channel || 'Unknown'}<br>
+               Location: ${cluster.lat.toFixed(5)}, ${cluster.lon.toFixed(5)}`
+            : `No SSID Found`;
+
+          circle.bindPopup(popupContent);
+
+          // Automatically open the popup on hover
+          circle.on('mouseover', () => {
+            circle.openPopup();
+          });
+
+          // Close the popup when the mouse leaves the circle
+          circle.on('mouseout', () => {
+            circle.closePopup();
+          });
         });
 
         // Add a legend to the map
