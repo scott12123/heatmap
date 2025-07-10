@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Signal Heatmap</title>
   <link rel="stylesheet" href="/leaflet/leaflet.css" />
+  <link rel="stylesheet" href="/leaflet/MarkerCluster.css" />
+  <link rel="stylesheet" href="/leaflet/MarkerCluster.Default.css" />
   <style>
     html, body, #map {
       height: 100%;
@@ -36,6 +38,7 @@
 
   <script src="/leaflet/leaflet.js"></script>
   <script src="/leaflet/leaflet-heat.js"></script>
+  <script src="/leaflet/leaflet.markercluster.js"></script>
   <script>
     // Haversine formula to calculate the distance between two points
     function haversine(lat1, lon1, lat2, lon2) {
@@ -76,6 +79,7 @@
             cluster.lat = (cluster.lat * cluster.count + lat) / (cluster.count + 1);
             cluster.lon = (cluster.lon * cluster.count + lon) / (cluster.count + 1);
             cluster.rssi = (cluster.rssi * cluster.count + rssi) / (cluster.count + 1);
+            cluster.points.push([lat, lon]);
             cluster.count += 1;
             addedToCluster = true;
             break;
@@ -84,16 +88,11 @@
 
         if (!addedToCluster) {
           // Create a new cluster
-          clusters.push({ lat, lon, rssi, count: 1 });
+          clusters.push({ lat, lon, rssi, count: 1, points: [[lat, lon]] });
         }
       });
 
-      // Normalize RSSI to a 0–1 range
-      return clusters.map(cluster => ({
-        lat: cluster.lat,
-        lon: cluster.lon,
-        weight: Math.max(0, Math.min(1, (cluster.rssi + 100) / 70)) // Normalize RSSI (-100 to -30)
-      }));
+      return clusters;
     }
 
     // Fetch raw data and process it
@@ -109,27 +108,41 @@
           attribution: '© OpenStreetMap contributors'
         }).addTo(map);
 
-        // Add the heatmap layer
-        if (clusters.length) {
-          const bounds = L.latLngBounds(clusters.map(c => [c.lat, c.lon]));
-          map.fitBounds(bounds);
+        // Create a marker cluster group
+        const markers = L.markerClusterGroup();
 
-          const heatLayer = L.heatLayer(
-            clusters.map(c => [c.lat, c.lon, c.weight]),
-            {
-              radius: 20,
-              max: 1,
-              blur: 15,
-              gradient: {
-                0.0: 'blue',
-                0.5: 'yellow',
-                1.0: 'red'
-              }
-            }
-          ).addTo(map);
-        } else {
-          console.error('No valid points to display on the map.');
-        }
+        // Add markers for each cluster
+        clusters.forEach(cluster => {
+          const marker = L.marker([cluster.lat, cluster.lon])
+            .bindPopup(
+              `<b>Cluster Info:</b><br>
+              Latitude: ${cluster.lat.toFixed(5)}<br>
+              Longitude: ${cluster.lon.toFixed(5)}<br>
+              Avg RSSI: ${cluster.rssi.toFixed(2)} dBm<br>
+              Points: ${cluster.count}`
+            );
+          markers.addLayer(marker);
+
+          // Draw a polygon around the cluster points
+          const polygon = L.polygon(cluster.points, {
+            color: 'blue',
+            weight: 2,
+            fillColor: 'lightblue',
+            fillOpacity: 0.4
+          }).addTo(map);
+          polygon.bindPopup(
+            `<b>Cluster Boundary:</b><br>
+            Points: ${cluster.count}<br>
+            Avg RSSI: ${cluster.rssi.toFixed(2)} dBm`
+          );
+        });
+
+        // Add the marker cluster group to the map
+        map.addLayer(markers);
+
+        // Fit the map to the bounds of all clusters
+        const bounds = L.latLngBounds(clusters.map(c => [c.lat, c.lon]));
+        map.fitBounds(bounds);
       })
       .catch(err => console.error('Failed to load data', err));
   </script>
