@@ -81,11 +81,11 @@
           let color;
           if (rssi === null || rssi === 0) {
             color = 'blue'; // Unknown signal strength
-          } else if (rssi >= -40) {
-            color = 'green'; // Strong signal
           } else if (rssi >= -50) {
-            color = 'yellow'; // Good signal
+            color = 'green'; // Strong signal
           } else if (rssi >= -60) {
+            color = 'yellow'; // Good signal
+          } else if (rssi >= -70) {
             color = 'orange'; // Average signal
           } else {
             color = 'red'; // Poor signal
@@ -96,7 +96,7 @@
             color: color,
             fillColor: color,
             fillOpacity: 1,
-            radius: 4 // Fixed radius for visualization
+            radius: 3 // Fixed radius for visualization
           }).addTo(map);
 
           // Add a popup with RSSI information
@@ -134,10 +134,10 @@
           const div = L.DomUtil.create('div', 'legend');
           div.innerHTML = `
             <strong>Signal Strength</strong><br>
-            <i style="background: green"></i> Strong (≥ -40 dBm)<br>
-            <i style="background: yellow"></i> Good (≥ -50 dBm)<br>
-            <i style="background: orange"></i> Average (≥ -60 dBm)<br>
-            <i style="background: red"></i> Poor (< -60 dBm)<br>
+            <i style="background: green"></i> Strong (≥ -50 dBm)<br>
+            <i style="background: yellow"></i> Good (≥ -60 dBm)<br>
+            <i style="background: orange"></i> Average (≥ -70 dBm)<br>
+            <i style="background: red"></i> Poor (< -70 dBm)<br>
             <i style="background: blue"></i> No SSID
           `;
           return div;
