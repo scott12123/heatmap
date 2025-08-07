@@ -32,7 +32,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return http.server.SimpleHTTPRequestHandler.do_GET(self)
 
 def find_and_kill_existing_process(port):
-    """Find and kill any process using the specified port."""
+    #Find and kill any process using the specified port.
     try:
         result = os.popen(f"sudo netstat -tuln | grep :{port}").read()
         if result:
@@ -44,12 +44,12 @@ def find_and_kill_existing_process(port):
         print(f"Failed to kill process on port {port}: {e}")
 
 def signal_handler(sig, frame):
-    """Handle graceful shutdown on SIGINT or SIGTERM."""
+    #Handle graceful shutdown on SIGINT or SIGTERM
     print("\nShutting down server gracefully...")
     sys.exit(0)
 
 def start_server():
-    """Start the server with retries if the port is still in use."""
+    #Start the server with retries if the port is still in use.
     retries = 3
     for attempt in range(retries):
         try:
@@ -82,6 +82,4 @@ if __name__ == '__main__':
     find_and_kill_existing_process(PORT)
 
     os.chdir(BASE_DIR)
-
-    # Start
     start_server()
