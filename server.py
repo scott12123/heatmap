@@ -31,6 +31,36 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 self.path = '/index.html'
             return http.server.SimpleHTTPRequestHandler.do_GET(self)
 
+    def do_POST(self):
+        if self.path == '/data':
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length)
+            try:
+                data = json.loads(post_data)
+                print(f"Received data: {data}")
+
+                # Save the data to test_results.json
+                file_path = BASE_DIR / 'test_results.json'
+                if file_path.exists():
+                    with file_path.open('r') as f:
+                        results = json.load(f)
+                else:
+                    results = []
+
+                results.append(data)
+
+                with file_path.open('w') as f:
+                    json.dump(results, f, indent=2)
+
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(b"Data saved successfully")
+            except Exception as e:
+                print(f"Error processing POST request: {e}")
+                self.send_response(500)
+                self.end_headers()
+                self.wfile.write(b"Internal Server Error")
+
 def find_and_kill_existing_process(port):
     #Find and kill any process using the specified port.
     try:
