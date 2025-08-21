@@ -1,8 +1,6 @@
-Run `python3 server.py` and open `http://localhost:8500` in your browser.
+Initial setup to create systemd heatmap.service:
+sudo python3 setup.py
 
-To install the server as a service that starts on boot, run:
+Manual run sudo python3 server.py
 
-    sudo python3 setup.py
-
-This installs any required Python modules and configures a systemd service
-that restarts automatically if the server stops.
+Heatmap URL: http://localhost:8500

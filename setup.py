@@ -18,13 +18,12 @@ REQUIREMENTS = BASE_DIR / "requirements.txt"
 
 
 def install_requirements():
-    """Install Python dependencies if ``requirements.txt`` exists."""
+#Install dependencies if ``requirements.txt`` exist
     if REQUIREMENTS.exists():
         subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", str(REQUIREMENTS)])
 
 
 def create_service():
-    """Create and enable the systemd service for ``server.py``."""
     user = os.environ.get("SUDO_USER") or "pi"
     service_contents = f"""
 [Unit]

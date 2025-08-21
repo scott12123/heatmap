@@ -36,7 +36,6 @@
 
   <script src="/leaflet/leaflet.js"></script>
   <script>
-    // Fetch raw data and process it
     fetch('/data')
       .then(response => response.json())
       .then(rawData => {
@@ -52,10 +51,10 @@
           subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
         });
 
-        // Add the default layer to the map
+        // Add the default OSM layer to the map
         defaultLayer.addTo(map);
 
-        // Add layer control to switch between layers
+        // Add layer control to switch between layers, added google sat view
         L.control.layers({
           'OpenStreetMap': defaultLayer,
           'Google Satellite': satelliteLayer
@@ -80,7 +79,7 @@
           // Determine the color based on RSSI
           let color;
           if (rssi === null || rssi === 0) {
-            color = 'blue'; // Unknown signal strength
+            color = 'blue'; // No signal found
           } else if (rssi >= -50) {
             color = 'green'; // Strong signal
           } else if (rssi >= -60) {
@@ -96,7 +95,7 @@
             color: color,
             fillColor: color,
             fillOpacity: 1,
-            radius: 3 // Fixed radius for visualization
+            radius: 3 // Fixed radius. Might need to adjust
           }).addTo(map);
 
           // Add a popup with RSSI information
@@ -121,7 +120,7 @@
           });
         });
 
-        // Center the map on the points
+        // Center the map on the markers
         if (rawData.length > 0) {
           const bounds = L.latLngBounds(rawData.map(point => [point.latitude, point.longitude]));
           map.fitBounds(bounds);

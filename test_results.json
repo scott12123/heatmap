@@ -1,16 +1,2 @@
 [
-  {
-    "timestamp": 1752101940,
-    "type": "signal_scan",
-    "latitude": -31.90055866475571,
-    "longitude": 133.42490189493097,
-    "scan_result": {
-      "ssid": "APN staff",
-      "bssid": "e6:5e:1b:a2:cd:81",
-      "rssi_dbm": -36,
-      "channel": "11",
-      "latitude": -31.901558772683405,
-      "longitude": 133.42856971559996
-    }
-  }
 ]
